@@ -1,3 +1,8 @@
 {
-  "songs": []
+  "songs": [
+    {
+      "title": "点描の唄（Cメジャー）",
+      "file": "tenbyo_no_uta_cmaj.json"
+    }
+  ]
 }
