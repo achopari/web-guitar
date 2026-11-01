@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Webギターコード楽器 - ワンフレーズ・アルペジオ版</title>
+<style>
+:root { color-scheme: dark; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; min-height: 100vh; background: #1e1e24; color: #fff;
+  font-family: system-ui, sans-serif; display: flex; flex-direction: column;
+  overscroll-behavior: none;
+}
+#info-panel { padding: 12px 14px; text-align: center; background: #2a2a35; }
+h1 { font-size: 18px; margin: 0 0 8px; }
+#chord-display { font-size: clamp(32px, 8vw, 48px); font-weight: 700; color: #ffb454; min-height: 1.25em; }
+#progress { color: #bbb; font-size: 13px; margin: 3px 0 8px; }
+.controls { display: flex; justify-content: center; align-items: center; gap: 8px; flex-wrap: wrap; }
+button, .file-label {
+  border: 0; border-radius: 9px; padding: 11px 16px; font-size: 15px;
+  color: #fff; background: #46566b; cursor: pointer; touch-action: manipulation;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+button:disabled, .file-label.disabled { opacity: .4; pointer-events: none; }
+#next-button { background: #e67e22; color: #161616; font-weight: 700; }
+#prev-button { background: #526273; }
+.file-label { display: inline-block; background: #3b806b; }
+input[type=file] { display: none; }
+#file-status { font-size: 12px; color: #bbb; margin-top: 7px; min-height: 1.2em; }
+
+/* アルペジオコントロールパネル */
+#arpeggio-panel {
+  flex: 1; max-width: 700px; width: 100%; margin: 16px auto; padding: 20px;
+  background: #2c3e50; border-radius: 15px; display: flex;
+  flex-direction: column; gap: 18px; justify-content: center; align-items: center;
+  box-shadow: inset 0 0 20px rgba(0,0,0,.5);
+}
+.panel-section { width: 100%; text-align: center; }
+.section-title { font-size: 13px; color: #aaa; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+
+/* 縦横比が整ったボタン用スタイル */
+.pattern-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; width: 100%; }
+.pattern-btn {
+  flex: 1; min-width: 140px; max-width: 200px; aspect-ratio: 2.5 / 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: #34495e; border: 2px solid transparent; font-size: 15px; text-align: center; padding: 12px;
+}
+.pattern-btn.active { background: #2980b9; border-color: #3498db; font-weight: bold; }
+.pattern-btn small { font-size: 11px; opacity: 0.8; margin-top: 6px; }
+
+/* ワンフレーズ演奏ボタン (大きめの正方形に近い比率) */
+.play-controls { display: flex; gap: 10px; justify-content: center; align-items: center; }
+#trigger-arpeggio {
+  background: #27ae60; font-weight: bold; font-size: 18px;
+  width: 100%; max-width: 200px; aspect-ratio: 2.5 / 1; border-radius: 12px;
+}
+#trigger-arpeggio:active { background: #219653; transform: scale(0.98); }
+
+.bpm-controls { display: flex; align-items: center; justify-content: center; gap: 12px; }
+.bpm-display { font-size: 20px; font-weight: bold; color: #ffb454; min-width: 80px; text-align: center; }
+.bpm-btn { width: 44px; height: 44px; padding: 0; font-size: 18px; font-weight: bold; background: #4a5c6e; border-radius: 50%; }
+input[type=range] { width: 160px; accent-color: #ffb454; }
+
+#help { color: #aaa; font-size: 12px; padding: 0 16px 12px; line-height: 1.5; text-align: center; }
+@media (orientation: landscape) {
+  #info-panel { padding: 7px 12px; }
+  #arpeggio-panel { margin: 8px auto; padding: 12px; gap: 10px; }
+  #help { padding-bottom: 6px; }
+}
+/* 画面下部の6本のギター弦 */
+#string-panel {
+  width: 100%;
+  max-width: 700px;
+  margin: 0 auto 16px;
+  padding: 12px 20px;
+  background: #252b33;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.guitar-string {
+  position: relative;
+  width: 100%;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  touch-action: none;
+}
+
+.guitar-string::after {
+  content: "";
+  position: absolute;
+  left: 30px;
+  right: 0;
+  top: 50%;
+  height: var(--string-width, 2px);
+  background: linear-gradient(to bottom, #aaa, #eee, #888);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.guitar-string .string-label {
+  width: 26px;
+  color: #ffb454;
+  font-size: 12px;
+  font-weight: bold;
+  text-align: left;
+}
+
+.guitar-string:active {
+  background: #34495e;
+}
+
+.guitar-string:disabled {
+  opacity: 0.3;
+}
+
+/* 弦の太さ：上から1弦→6弦 */
+.guitar-string:nth-of-type(1) { --string-width: 1px; }
+.guitar-string:nth-of-type(2) { --string-width: 1.3px; }
+.guitar-string:nth-of-type(3) { --string-width: 1.6px; }
+.guitar-string:nth-of-type(4) { --string-width: 1.9px; }
+.guitar-string:nth-of-type(5) { --string-width: 2.2px; }
+.guitar-string:nth-of-type(6) { --string-width: 2.5px; }
+</style>
+</head>
+<body>
+<section id="info-panel">
+  <h1>電子ギター - ワンフレーズ・アルペジオ</h1>
+  <div id="chord-display">コード列を読み込んでください</div>
+  <div id="progress">未読み込み</div>
+  <div class="controls">
+    <label class="file-label" for="file-input">コードファイル読込</label>
+    <input id="file-input" type="file" accept=".json,.txt,application/json,text/plain">
+    <button id="audio-button">音声を有効化</button>
+    <button id="first-button" disabled>⏮ 先頭に戻る</button>
+    <button id="prev-button" disabled>◀ 前のコード</button>
+    <button id="next-button" disabled>次のコード ▶</button>
+  </div>
+  <div id="file-status">JSONまたはテキストファイルを演奏前に読み込んでください</div>
+</section>
+
+<div id="arpeggio-panel">
+  <div class="panel-section">
+    <div class="section-title">アルペジオBPM</div>
+    <div class="bpm-controls">
+      <button id="bpm-down" class="bpm-btn" disabled>-</button>
+      <input type="range" id="bpm-slider" min="50" max="200" value="100" disabled>
+      <button id="bpm-up" class="bpm-btn" disabled>+</button>
+      <div id="bpm-val" class="bpm-display">100 BPM</div>
+    </div>
+  </div>
+  
+  <div class="panel-section">
+    <!-- <div class="section-title">アルペジオパターン</div> -->
+    <div class="pattern-buttons">
+      <button class="pattern-btn active" data-pattern="0" disabled>
+        <span>アルペジオ 1</span>
+        <small>ベース-3-1-3-1-2-3-4</small>
+      </button>
+      <button class="pattern-btn" data-pattern="1" disabled>
+        <span>アルペジオ 2</span>
+        <small>ベース-3-2-3-1-3-2-3</small>
+      </button>
+      <button class="pattern-btn" data-pattern="2" disabled>
+        <span>アルペジオ 3</span>
+        <small>ベース-3-2-1-2-3</small>
+      </button>
+    </div>
+  </div>
+
+  <div class="panel-section">
+    <div class="play-controls">
+      <button id="trigger-arpeggio" disabled>コード一発</button>
+    </div>
+  </div>
+
+</div>
+<!-- 6本のギター弦 -->
+<div id="string-panel">
+  <div class="section-title">STRING PLAY</div>
+
+  <button class="guitar-string" data-string="5" disabled>
+    <span class="string-label">1</span>
+  </button>
+
+  <button class="guitar-string" data-string="4" disabled>
+    <span class="string-label">2</span>
+  </button>
+
+  <button class="guitar-string" data-string="3" disabled>
+    <span class="string-label">3</span>
+  </button>
+
+  <button class="guitar-string" data-string="2" disabled>
+    <span class="string-label">4</span>
+  </button>
+
+  <button class="guitar-string" data-string="1" disabled>
+    <span class="string-label">5</span>
+  </button>
+
+  <button class="guitar-string" data-string="0" disabled>
+    <span class="string-label">6</span>
+  </button>
+</div>
+<div id="help">
+  最初に「音声を有効化」を押してギター音源を読み込んでください。ファイルからコード列をロードした後、パターンを選んで「ワンフレーズ演奏」ボタンを押すと、1回分のアルペジオが鳴ります。<br>
+  ファイル例: <code>{"chords":["C","Am","F","G7","C/E"]}</code><br>音源: tonejs-instruments / guitar-acoustic（CC BY 3.0）
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/tone@14.8.49/build/Tone.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/nbrosowsky/tonejs-instruments@master/Tonejs-Instruments.js"></script>
+<script>
+"use strict";
+
+const OPEN_STRINGS = [40, 45, 50, 55, 59, 64];
+
+const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+const ROOTS = {
+  C:0, "C#":1, Db:1, D:2, "D#":3, Eb:3, E:4, F:5, "F#":6, Gb:6,
+  G:7, "G#":8, Ab:8, A:9, "A#":10, Bb:10, B:11
+};
+
+const QUALITIES = {
+  "": [0,4,7], "maj": [0,4,7], "M": [0,4,7],
+  "m": [0,3,7], "min": [0,3,7], "-": [0,3,7],
+  "7": [0,4,7,10], "maj7": [0,4,7,11], "M7": [0,4,7,11],
+  "m7": [0,3,7,10], "min7": [0,3,7,10],
+  "add9": [0,4,7,14], "madd9": [0,3,7,14],
+  "sus4": [0,5,7], "sus2": [0,2,7],
+  "6": [0,4,7,9], "m6": [0,3,7,9],
+  "9": [0,4,7,10,14], "maj9": [0,4,7,11,14], "m9": [0,3,7,10,14],
+  "dim": [0,3,6], "aug": [0,4,8], "m7b5": [0,3,6,10],
+  "dim7": [0,3,6,9], "7sus4": [0,5,7,10], "6sus4": [0,5,7,9]
+};
+
+function parseChord(symbol) {
+  const s = String(symbol).trim().replaceAll("♯", "#").replaceAll("♭", "b");
+  const match = s.match(/^([A-G](?:#|b)?)(.*?)(?:\/([A-G](?:#|b)?))?$/);
+  if (!match) throw new Error("コード名を解釈できません: " + symbol);
+  const [, rootName, qualityText, bassName] = match;
+  const root = ROOTS[rootName];
+  if (root === undefined) throw new Error("ルート音が不正です: " + rootName);
+  const quality = qualityText || "";
+  const intervals = QUALITIES[quality];
+  if (!intervals) throw new Error("未対応のコード種類です: " + quality + " (" + symbol + ")");
+  const bass = bassName ? ROOTS[bassName] : root;
+  if (bass === undefined) throw new Error("オンコードのベース音が不正です: " + bassName);
+  return { name: s, root, bass, intervals };
+}
+
+function midiName(midi) {
+  return NOTE_NAMES[((midi % 12) + 12) % 12] + (Math.floor(midi / 12) - 1);
+}
+
+function makeVoicing(chord) {
+  const MAX_FRET = 5;
+
+  // コードの構成音（半音単位）
+  const chordPitches = new Set(
+    chord.intervals.map(n => (chord.root + n) % 12)
+  );
+
+  // オンコードのベース音も候補に追加
+  const allowedPitches = new Set([
+    ...chordPitches,
+    chord.bass
+  ]);
+
+  // 各弦の候補を生成。nullはミュート。
+  const candidates = OPEN_STRINGS.map(open => {
+    const list = [null];
+
+    for (let fret = 0; fret <= MAX_FRET; fret++) {
+      const note = open + fret;
+
+      if (allowedPitches.has(note % 12)) {
+        list.push(note);
+      }
+    }
+
+    return list;
+  });
+
+  let bestVoicing = null;
+  let bestScore = Infinity;
+
+  const current = Array(6).fill(null);
+
+  // ボイシングの評価
+  function evaluate(notes) {
+    const activeNotes = notes.filter(n => n !== null);
+
+    if (activeNotes.length === 0) return Infinity;
+
+    // 最低音が指定ベース音であること
+    const lowest = Math.min(...activeNotes);
+
+    if (lowest % 12 !== chord.bass) {
+      return Infinity;
+    }
+
+    // コードの構成音がすべて含まれていること
+    const usedPitches = new Set(
+      activeNotes.map(n => n % 12)
+    );
+
+    for (const pitch of chordPitches) {
+      if (!usedPitches.has(pitch)) {
+        return Infinity;
+      }
+    }
+
+    let score = 0;
+
+    const frets = [];
+    const pitchCounts = new Map();
+
+    notes.forEach((note, i) => {
+      if (note === null) {
+        // ミュートのペナルティ
+        score += 8.0;
+        return;
+      }
+
+      const fret = note - OPEN_STRINGS[i];
+      frets.push(fret);
+
+      // 低いフレットを優先
+      score += fret * 0.7;
+      score += fret * fret * 0.12;
+
+      // 開放弦を優先
+      if (fret === 0) {
+        score -= 0.8;
+      }
+
+      // 同じ音程の重複を記録
+      const pitch = note % 12;
+      pitchCounts.set(
+        pitch,
+        (pitchCounts.get(pitch) || 0) + 1
+      );
+    });
+
+    // 同じ構成音の重複を減らす
+    for (const count of pitchCounts.values()) {
+      if (count > 1) {
+        score += (count - 1) * 1.5;
+      }
+    }
+
+    // 押弦する弦の数を抑える
+    const frettedCount = frets.filter(f => f > 0).length;
+    score += frettedCount * 0.5;
+
+    // フレット範囲を狭くする
+    if (frets.length > 0) {
+      score += (Math.max(...frets) - Math.min(...frets)) * 0.4;
+    }
+
+    // オンコードでは、最上弦の重複音をやや避ける
+    if (chord.bass !== chord.root && notes[5] !== null) {
+      const topPitch = notes[5] % 12;
+
+      for (let i = 0; i < 5; i++) {
+        if (notes[i] !== null && notes[i] % 12 === topPitch) {
+          score += 2;
+          break;
+        }
+      }
+    }
+
+    return score;
+  }
+
+  // 全組み合わせを探索
+  function search(index) {
+    if (index === 6) {
+      const score = evaluate(current);
+
+      if (score < bestScore) {
+        bestScore = score;
+        bestVoicing = [...current];
+      }
+
+      return;
+    }
+
+    for (const note of candidates[index]) {
+      current[index] = note;
+      search(index + 1);
+    }
+  }
+
+  search(0);
+
+  if (bestVoicing === null) {
+    throw new Error(
+      "適切なボイシングを生成できません: " + chord.name
+    );
+  }
+
+  // MIDI番号を音名に変換。nullはミュート。
+  return bestVoicing.map(
+    note => note === null ? null : midiName(note)
+  );
+}
+
+
+// パターン定義: 0=6弦(低音), 1=5弦, 2=4弦, 3=3弦, 4=2弦, 5=1弦(高音)
+const PATTERNS = [
+  ["bass", 3, 5, 3, 5, 4, 3, 2], // パターン1
+  ["bass", 3, 5, 3, 2, 3, 4, 5], // パターン2
+  ["bass", 3, 4, 5, 4, 3]        // パターン3
+];
+
+let progression = [];
+let chordIndex = 0;
+let currentChord = null;
+let currentVoicing = null;
+let guitarSampler = null;
+let audioLoading = false;
+
+let currentPatternIndex = 0;
+let bpm = 100;
+let activeTimeouts = [];
+let soundingNotes = new Set();
+
+function stopPlayback() {
+  // 予約済みタイマーを停止
+  activeTimeouts.forEach(t => clearTimeout(t));
+  activeTimeouts = [];
+
+  // 再生中の音を短いリリース時間で停止
+  if (guitarSampler && soundingNotes.size > 0) {
+    const oldRelease = guitarSampler.release;
+    guitarSampler.release = 0.01;
+    guitarSampler.triggerRelease([...soundingNotes], Tone.now());
+    guitarSampler.release = oldRelease;
+  }
+
+  soundingNotes.clear();
+}
+
+const display = document.getElementById("chord-display");
+const progress = document.getElementById("progress");
+const status = document.getElementById("file-status");
+const fileInput = document.getElementById("file-input");
+const nextButton = document.getElementById("next-button");
+const prevButton = document.getElementById("prev-button");
+const audioButton = document.getElementById("audio-button");
+const firstButton = document.getElementById("first-button");
+<!-- const strumButton = document.getElementById("strum-button"); -->
+
+const triggerArpeggioBtn = document.getElementById("trigger-arpeggio");
+const patternButtons = document.querySelectorAll(".pattern-btn");
+const bpmUpBtn = document.getElementById("bpm-up");
+const bpmDownBtn = document.getElementById("bpm-down");
+const bpmSlider = document.getElementById("bpm-slider");
+const bpmValDisplay = document.getElementById("bpm-val");
+const stringButtons = document.querySelectorAll(".guitar-string");
+
+function showChord() {
+  currentChord = parseChord(progression[chordIndex]);
+  currentVoicing = makeVoicing(currentChord);
+  display.textContent = currentChord.name;
+  progress.textContent = `${chordIndex + 1} / ${progression.length}`;
+  prevButton.disabled = chordIndex === 0;
+  nextButton.disabled = progression.length < 2;
+  // ミュート弦（null）を非表示にする
+  stringButtons.forEach(btn => {
+    const stringIdx = Number(btn.dataset.string);
+    btn.style.visibility =
+      currentVoicing[stringIdx] === null ? "hidden" : "visible";
+  });
+}
+
+function moveChord(delta, stopAudio = true) {
+  if (!progression.length) return;
+
+  if (stopAudio) stopPlayback();
+
+  chordIndex = (chordIndex + delta + progression.length) % progression.length;
+  showChord();
+}
+
+function updateUIState() {
+  const ready = guitarSampler && progression.length > 0;
+  <!-- strumButton.disabled = !ready; -->
+  firstButton.disabled = !ready;
+  triggerArpeggioBtn.disabled = !ready;
+  patternButtons.forEach(btn => btn.disabled = !ready);
+  bpmUpBtn.disabled = !ready;
+  bpmDownBtn.disabled = !ready;
+  bpmSlider.disabled = !ready;
+  stringButtons.forEach(btn => {
+    btn.disabled = !ready;
+  });
+}
+
+audioButton.addEventListener("click", async () => {
+  try {
+    await startAudio();
+    audioButton.textContent = "音源 読込済み";
+    audioButton.disabled = true;
+    status.textContent = "アコギ音源の準備完了";
+    updateUIState();
+  } catch (error) {
+    status.textContent = "音声初期化エラー: " + error.message;
+  }
+});
+
+nextButton.addEventListener("click", () => moveChord(1));
+prevButton.addEventListener("click", () => moveChord(-1));
+firstButton.addEventListener("pointerdown", e => {
+  e.preventDefault();
+  if (!progression.length) return;
+
+  stopPlayback();
+  chordIndex = 0;
+  showChord();
+});
+
+async function startAudio() {
+  if (Tone.context.state !== "running") await Tone.start();
+  if (guitarSampler) return;
+  if (audioLoading) {
+    while (audioLoading) await new Promise(resolve => setTimeout(resolve, 50));
+    if (!guitarSampler) throw new Error("ギター音源を読み込めませんでした");
+    return;
+  }
+
+  audioLoading = true;
+  audioButton.disabled = true;
+  audioButton.textContent = "音源読込中…";
+  status.textContent = "アコースティックギターの録音音源を読み込んでいます…";
+
+  try {
+    guitarSampler = SampleLibrary.load({
+      instruments: "guitar-acoustic",
+      minify: true,
+      baseUrl: "https://nbrosowsky.github.io/tonejs-instruments/samples/"
+    }).toDestination();
+
+    guitarSampler.release = 0.75;
+    guitarSampler.volume.value = -2;
+    await Tone.loaded();
+  } catch (error) {
+    guitarSampler = null;
+    audioButton.disabled = false;
+    audioButton.textContent = "音声を有効化";
+    throw error;
+  } finally {
+    audioLoading = false;
+  }
+}
+
+fileInput.addEventListener("change", async event => {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    let items;
+    if (file.name.toLowerCase().endsWith(".json")) {
+      const data = JSON.parse(text);
+      items = Array.isArray(data) ? data : data.chords;
+    } else {
+      items = text.split(/[\s,、]+/).filter(Boolean);
+    }
+    if (!Array.isArray(items) || items.length === 0) {
+      throw new Error('ファイルにコード列がありません。"chords" 配列を指定してください。');
+    }
+    const checked = items.map(item => {
+      const symbol = typeof item === "string" ? item : item.chord;
+      if (!symbol) throw new Error("コード指定が文字列ではありません。");
+      parseChord(symbol);
+      return symbol;
+    });
+    progression = checked;
+    chordIndex = 0;
+    showChord();
+    updateUIState();
+    status.textContent = `${file.name} を読み込みました（${progression.length}コード）`;
+  } catch (error) {
+    status.textContent = "読み込みエラー: " + error.message;
+  } finally {
+    fileInput.value = "";
+  }
+});
+
+function pluckString(stringIdx, voicing = currentVoicing) {
+  if (!guitarSampler || !voicing) return;
+
+  let targetIdx = stringIdx;
+
+  if (stringIdx === "bass") {
+    targetIdx = -1;
+    let lowestNote = Infinity;
+
+    voicing.forEach((note, index) => {
+      if (note !== null) {
+        const midi = Tone.Frequency(note).toMidi();
+        if (midi < lowestNote) {
+          lowestNote = midi;
+          targetIdx = index;
+        }
+      }
+    });
+
+    if (targetIdx === -1) return;
+  }
+
+  const note = voicing[targetIdx];
+
+  if (note !== null) {
+    soundingNotes.add(note);
+    const velocity = 0.75 + Math.random() * 0.15;
+    guitarSampler.triggerAttackRelease(note, 1.2, Tone.now(), velocity);
+  }
+}
+
+// 画面上の弦を押すと、現在のコードの該当音を鳴らす
+stringButtons.forEach(btn => {
+  btn.addEventListener("pointerdown", event => {
+    event.preventDefault();
+
+    if (!guitarSampler || !currentVoicing) return;
+
+    const stringIdx = Number(btn.dataset.string);
+
+    // 現在のコードの該当弦だけを鳴らす
+    pluckString(stringIdx);
+  });
+});
+
+<!-- strumButton.addEventListener("click", () => { -->
+  <!-- if (!guitarSampler || !currentVoicing) return; -->
+  <!-- const now = Tone.now() + 0.015; -->
+  <!-- const interval = 0.027; -->
+  <!-- currentVoicing.forEach((note, index) => { -->
+    <!-- if (note) { -->
+      <!-- const velocity = 0.76 + Math.random() * 0.18; -->
+      <!-- guitarSampler.triggerAttackRelease(note, 1.5, now + index * interval, velocity); -->
+    <!-- } -->
+  <!-- }); -->
+<!-- }); -->
+
+// コード一発
+triggerArpeggioBtn.addEventListener("pointerdown", (e) => {
+  e.preventDefault();
+  if (!guitarSampler || !currentVoicing) return;
+
+  // 前の音を停止
+  stopPlayback();
+
+  // 現在のコードを保存
+  const voicing = [...currentVoicing];
+
+  // 6弦から順に演奏
+  voicing.forEach((note, index) => {
+    if (note) {
+      soundingNotes.add(note);
+      const velocity = 0.76 + Math.random() * 0.18;
+      guitarSampler.triggerAttackRelease(
+        note, 1.5, Tone.now() + index * 0.027, velocity
+      );
+    }
+  });
+
+  // 次のコードを表示
+  moveChord(1, false);
+});
+
+
+// アルペジオパターン
+patternButtons.forEach(btn => {
+  btn.addEventListener("pointerdown", e => {
+    e.preventDefault();
+    patternButtons.forEach(b => b.classList.remove("active"));
+
+    const target = e.currentTarget;
+    target.classList.add("active");
+    currentPatternIndex = parseInt(target.dataset.pattern, 10);
+
+    if (!guitarSampler || !currentVoicing) return;
+
+    // 前の音を停止
+    stopPlayback();
+
+    // 現在のコードを保存
+    const voicing = [...currentVoicing];
+
+    const pattern = PATTERNS[currentPatternIndex];
+    const intervalMs = (60 / bpm / 4) * 1000;
+
+    pattern.forEach((targetString, index) => {
+      const timer = setTimeout(() => {
+        pluckString(targetString, voicing);
+      }, index * intervalMs);
+
+      activeTimeouts.push(timer);
+    });
+
+    // 次のコードを表示
+    moveChord(1, false);
+  });
+});
+
+function setBpm(newBpm) {
+  bpm = Math.max(50, Math.min(200, newBpm));
+  bpmValDisplay.textContent = `${bpm} BPM`;
+  bpmSlider.value = bpm;
+}
+
+bpmUpBtn.addEventListener("click", () => setBpm(bpm + 5));
+bpmDownBtn.addEventListener("click", () => setBpm(bpm - 5));
+bpmSlider.addEventListener("input", (e) => setBpm(parseInt(e.target.value, 10)));
+</script>
+</body>
+</html>
