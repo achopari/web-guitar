@@ -152,12 +152,12 @@ input[type=range] { width: 160px; accent-color: #ffb454; }
   <div id="chord-display">コード列を読み込んでください</div>
   <div id="progress">未読み込み</div>
   <div class="controls">
+    <button id="audio-button">音声を有効化</button>
     <label class="file-label" for="file-input">コードファイル読込</label>
     <input id="file-input" type="file" accept=".json,.txt,application/json,text/plain">
     <select id="song-select" disabled>
       <option value="">登録曲を読み込み中...</option>
     </select>
-    <button id="audio-button">音声を有効化</button>
     <button id="first-button" disabled>⏮ 先頭に戻る</button>
     <button id="prev-button" disabled>◀ 前のコード</button>
     <button id="next-button" disabled>次のコード ▶</button>
@@ -230,7 +230,7 @@ input[type=range] { width: 160px; accent-color: #ffb454; }
   </button>
 </div>
 <div id="help">
-  最初に「音声を有効化」を押してギター音源を読み込んでください。ファイルからコード列をロードした後、パターンを選んで「ワンフレーズ演奏」ボタンを押すと、1回分のアルペジオが鳴ります。<br>
+  最初に「音声を有効化」を押して音源を読み込んでください。ファイルまたは登録曲からコード列をロードした後、演奏可能です。<br>
   ファイル例: <code>{"chords":["C","Am","F","G7","C/E"]}</code><br>音源: tonejs-instruments / guitar-acoustic（CC BY 3.0）
 </div>
 
