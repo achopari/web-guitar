@@ -85,7 +85,8 @@ input[type=range] { width: 160px; accent-color: #ffb454; }
   width: 100%;
   max-width: 700px;
   margin: 0 auto 16px;
-  padding: 12px 20px;
+  padding: 12px 20px 80px;
+  touch-action: none;
   background: #252b33;
   border-radius: 12px;
   display: flex;
@@ -734,11 +735,13 @@ function pluckString(stringIdx, voicing = currentVoicing) {
   }
 }
 
-// 弦を押したままスワイプすると、通過した弦を発音する
+// 弦全体の操作領域
+const stringPanel = document.getElementById("string-panel");
+
 let activeStringPointerId = null;
 let lastPlayedString = null;
 
-// 指が現在触れている弦を調べて発音
+// 指の位置にある弦を発音
 function playStringAtPoint(x, y) {
   if (!guitarSampler || !currentVoicing) return;
 
@@ -752,36 +755,34 @@ function playStringAtPoint(x, y) {
 
   const stringIdx = Number(stringButton.dataset.string);
 
-  // 同じ弦の上では再発音しない
   if (stringIdx === lastPlayedString) return;
 
   lastPlayedString = stringIdx;
   pluckString(stringIdx);
 }
 
-// タッチ・マウス開始
-stringButtons.forEach(btn => {
-  btn.addEventListener("pointerdown", event => {
-    event.preventDefault();
+// 弦パネル内のどこからでも操作開始可能
+stringPanel.addEventListener("pointerdown", event => {
+  if (!guitarSampler || !currentVoicing) return;
 
-    if (!guitarSampler || !currentVoicing) return;
+  event.preventDefault();
 
-    activeStringPointerId = event.pointerId;
-    lastPlayedString = null;
+  activeStringPointerId = event.pointerId;
+  lastPlayedString = null;
 
-    playStringAtPoint(event.clientX, event.clientY);
-  });
+  playStringAtPoint(event.clientX, event.clientY);
 });
 
-// 指・マウスの移動
+// 指の移動
 document.addEventListener("pointermove", event => {
   if (event.pointerId !== activeStringPointerId) return;
 
   event.preventDefault();
+
   playStringAtPoint(event.clientX, event.clientY);
 });
 
-// 指・マウスを離した
+// 指を離したとき
 function endStringPointer(event) {
   if (event.pointerId !== activeStringPointerId) return;
 
@@ -817,7 +818,6 @@ triggerArpeggioBtn.addEventListener("pointerdown", (e) => {
   // 次のコードを表示
   moveChord(1, false);
 });
-
 
 // アルペジオパターン
 patternButtons.forEach(btn => {
