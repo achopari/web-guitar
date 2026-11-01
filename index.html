@@ -62,7 +62,7 @@ input[type=file] { display: none; }
 .pattern-btn.active { background: #2980b9; border-color: #3498db; font-weight: bold; }
 .pattern-btn small { font-size: 11px; opacity: 0.8; margin-top: 6px; }
 
-/* ワンフレーズ演奏ボタン (大きめの正方形に近い比率) */
+/* ワンフレーズ演奏ボタン */
 .play-controls { display: flex; gap: 10px; justify-content: center; align-items: center; }
 #next-button, #trigger-arpeggio {
   background: #27ae60; font-weight: bold; font-size: 18px;
@@ -167,16 +167,16 @@ input[type=range] { width: 160px; accent-color: #ffb454; }
 <section id="info-panel">
   <h1>電子ギター - ワンフレーズ・アルペジオ</h1>
   <div class="controls">
-    <button id="audio-button">音声を有効化</button>
-    <label class="file-label" for="file-input">コードファイル読込</label>
+    <button id="audio-button">音声 有効化</button>
+    <label class="file-label" for="file-input">コード読込</label>
     <input id="file-input" type="file" accept=".json,.txt,application/json,text/plain">
     <select id="song-select" disabled>
-      <option value="">登録曲を読み込み中...</option>
+      <option value="">登録曲 読込中...</option>
     </select>
-    <button id="first-button" disabled>⏮ 先頭に戻る</button>
-    <button id="prev-button" disabled>◀ 前のコード</button>
+    <button id="first-button" disabled>⏮ 先頭へ</button>
+    <button id="prev-button" disabled>◀ 前コード</button>
   </div>
-  <div id="file-status">JSONまたはテキストファイルを演奏前に読み込んでください</div>
+  <div id="file-status">JSONを演奏前に読み込む</div>
 </section>
 
 <div id="arpeggio-panel">
@@ -204,7 +204,7 @@ input[type=range] { width: 160px; accent-color: #ffb454; }
 
   <div class="panel-section">
     <div class="play-controls">
-      <button id="next-button" disabled>次のコード ▶</button>
+      <button id="next-button" disabled>次コード ▶</button>
       <button id="trigger-arpeggio" disabled>ストラム(一発)</button>
     </div>
   </div>
@@ -212,9 +212,9 @@ input[type=range] { width: 160px; accent-color: #ffb454; }
 
 <div id="chord-display">
   <span id="previous-chord">＿</span>
-  <span id="current-chord">コード列を読み込んでください</span>
+  <span id="current-chord">未読込</span>
+  <span id="progress">未読込</span>
 </div>
-<div id="progress">未読み込み</div>
 
 <!-- 6本のギター弦 -->
 <div id="string-panel">
