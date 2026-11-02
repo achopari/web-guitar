@@ -59,7 +59,11 @@ input[type=file] { display: none; }
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   background: #34495e; border: 2px solid transparent; font-size: 15px; text-align: center; padding: 12px;
 }
-.pattern-btn.active { background: #2980b9; border-color: #3498db; font-weight: bold; }
+.pattern-btn.pressed {
+  background: #2980b9;
+  border-color: #3498db;
+  font-weight: bold;
+}
 .pattern-btn small { font-size: 11px; opacity: 0.8; margin-top: 6px; }
 
 /* ワンフレーズ演奏ボタン */
@@ -191,7 +195,7 @@ input[type=range] { width: 160px; accent-color: #ffb454; }
   
   <div class="panel-section">
     <div class="pattern-buttons">
-      <button class="pattern-btn active" data-pattern="0" disabled>
+      <button class="pattern-btn" data-pattern="0" disabled>
         <span>アルペジオ 1</span>
         <small>ベース-3-1-3-1-2-3-4</small>
       </button>
@@ -813,13 +817,10 @@ document.addEventListener("pointercancel", endStringPointer);
 triggerArpeggioBtn.addEventListener("pointerdown", (e) => {
   e.preventDefault();
   if (!guitarSampler || !currentVoicing) return;
-
   // 前の音を停止
   stopPlayback();
-
   // 現在のコードを保存
   const voicing = [...currentVoicing];
-
   // 6弦から順に演奏
   voicing.forEach((note, index) => {
     if (note) {
@@ -830,40 +831,35 @@ triggerArpeggioBtn.addEventListener("pointerdown", (e) => {
       );
     }
   });
-
   // 次のコードを表示
   moveChord(1, false);
 });
 
 // アルペジオパターン
+let pressedPatternButton = null;
+let patternPointerId = null;
+
 patternButtons.forEach(btn => {
   btn.addEventListener("pointerdown", e => {
     e.preventDefault();
-    patternButtons.forEach(b => b.classList.remove("active"));
-
     const target = e.currentTarget;
-    target.classList.add("active");
+    target.classList.add("pressed");
+    pressedPatternButton = target;
+    patternPointerId = e.pointerId;
     currentPatternIndex = parseInt(target.dataset.pattern, 10);
-
     if (!guitarSampler || !currentVoicing) return;
-
     // 前の音を停止
     stopPlayback();
-
     // 現在のコードを保存
     const voicing = [...currentVoicing];
-
     const pattern = PATTERNS[currentPatternIndex];
     const intervalMs = (60 / bpm / 4) * 1000;
-
     pattern.forEach((targetString, index) => {
       const timer = setTimeout(() => {
         pluckString(targetString, voicing);
       }, index * intervalMs);
-
       activeTimeouts.push(timer);
     });
-
     // 次のコードを表示
     moveChord(1, false);
   });
