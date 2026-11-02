@@ -682,7 +682,11 @@ fileInput.addEventListener("change", async event => {
 // GitHub上の登録曲一覧を読み込む
 async function loadSongList() {
   try {
-    const response = await fetch("songs/index.json");
+    const response = await fetch("songs/index.json?t=" + Date.now(),
+      {
+        cache: "no-store"
+      }
+    );
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
@@ -714,7 +718,11 @@ songSelect.addEventListener("change", async () => {
   const file = songSelect.value;
   if (!file) return;
   try {
-    const response = await fetch("songs/" + encodeURIComponent(file));
+    const response = await fetch("songs/" + encodeURIComponent(file) + "?t=" + Date.now(),
+      {
+        cache: "no-store"
+      }
+    );    
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
