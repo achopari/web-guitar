@@ -865,6 +865,20 @@ patternButtons.forEach(btn => {
   });
 });
 
+function releasePatternButton(e) {
+  if (e.pointerId !== patternPointerId) return;
+
+  if (pressedPatternButton) {
+    pressedPatternButton.classList.remove("pressed");
+  }
+
+  pressedPatternButton = null;
+  patternPointerId = null;
+}
+
+document.addEventListener("pointerup", releasePatternButton);
+document.addEventListener("pointercancel", releasePatternButton);
+
 function setBpm(newBpm) {
   bpm = Math.max(50, Math.min(200, newBpm));
   bpmValDisplay.textContent = `${bpm} BPM`;
