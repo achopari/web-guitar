@@ -165,6 +165,17 @@ input[type=range] { width: 160px; accent-color: #ffb454; }
   -webkit-user-select: none;
   -webkit-touch-callout: none;
 }
+#lyrics-display {
+  text-align: center;
+  font-size: 20px;
+  font-weight: 500;
+  color: #ffffff;
+  margin: 4px auto 14px;
+  min-height: 1.5em;
+}
+#lyrics-display[hidden] {
+  display: none;
+}
 </style>
 </head>
 <body>
@@ -219,6 +230,8 @@ input[type=range] { width: 160px; accent-color: #ffb454; }
   <span id="current-chord">未読込</span>
   <span id="progress">未読込</span>
 </div>
+
+<div id="lyrics-display" hidden></div>
 
 <!-- 6本のギター弦 -->
 <div id="string-panel">
@@ -460,6 +473,7 @@ const PATTERNS = [
 ];
 
 let progression = [];
+let currentLyrics = null;
 let chordIndex = 0;
 let currentChord = null;
 let currentVoicing = null;
@@ -513,6 +527,15 @@ function showChord() {
   const currentChordDisplay = document.getElementById("current-chord");
   previousChordDisplay.textContent = chordIndex === 0 ? "＿" : progression[chordIndex - 1];
   currentChordDisplay.textContent = currentChord.name;
+  // 現在のコードに対応する歌詞を表示
+  const lyricsDisplay = document.getElementById("lyrics-display");
+  if (currentLyrics && chordIndex < currentLyrics.length) {
+    lyricsDisplay.textContent = currentLyrics[chordIndex];
+    lyricsDisplay.hidden = false;
+  } else {
+    lyricsDisplay.textContent = "";
+    lyricsDisplay.hidden = true;
+  }  
   progress.textContent = `${chordIndex + 1} / ${progression.length}`;
   prevButton.disabled = chordIndex === 0;
   nextButton.disabled = progression.length < 2;
@@ -605,24 +628,21 @@ async function startAudio() {
 }
 
 // コード列を共通処理で読み込む
-function loadChordItems(items, label) {
+function loadChordItems(items, label, lyrics = null) {
   if (!Array.isArray(items) || items.length === 0) {
     throw new Error("ファイルにコード列がありません");
   }
-
   const checked = items.map(item => {
     const symbol = typeof item === "string" ? item : item.chord;
-
     if (!symbol) {
       throw new Error("コード指定が文字列ではありません");
     }
-
     parseChord(symbol);
     return symbol;
   });
-
   stopPlayback();
   progression = checked;
+  currentLyrics = Array.isArray(lyrics) ? lyrics : null;
   chordIndex = 0;
   showChord();
   updateUIState();
@@ -639,16 +659,19 @@ fileInput.addEventListener("change", async event => {
   try {
     const text = await file.text();
     let items;
-
+    let lyrics = null;
     if (file.name.toLowerCase().endsWith(".json")) {
       const data = JSON.parse(text);
-      items = Array.isArray(data) ? data : data.chords;
+      if (Array.isArray(data)) {
+        items = data;
+      } else {
+        items = data.chords;
+        lyrics = data.lyrics;
+      }
     } else {
       items = text.split(/[\s,、]+/).filter(Boolean);
     }
-
-    loadChordItems(items, file.name);
-
+    loadChordItems(items, file.name, lyrics);
   } catch (error) {
     status.textContent = "読み込みエラー: " + error.message;
   } finally {
@@ -660,34 +683,25 @@ fileInput.addEventListener("change", async event => {
 async function loadSongList() {
   try {
     const response = await fetch("songs/index.json");
-
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
-
     const data = await response.json();
-
     if (!Array.isArray(data.songs)) {
       throw new Error("曲一覧の形式が不正です");
     }
-
     songSelect.innerHTML = '<option value="">登録曲を選択</option>';
-
     data.songs.forEach(song => {
       const option = document.createElement("option");
       option.value = song.file;
       option.textContent = song.title;
       songSelect.appendChild(option);
     });
-
     songSelect.disabled = data.songs.length === 0;
-
     if (data.songs.length === 0) {
       songSelect.options[0].textContent = "登録曲なし";
     }
-
     status.textContent = `登録曲 ${data.songs.length} 曲`;
-
   } catch (error) {
     songSelect.innerHTML =
       '<option value="">登録曲を読み込めません</option>';
@@ -699,21 +713,17 @@ async function loadSongList() {
 songSelect.addEventListener("change", async () => {
   const file = songSelect.value;
   if (!file) return;
-
   try {
     const response = await fetch("songs/" + encodeURIComponent(file));
-
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
-
     const data = await response.json();
-
     loadChordItems(
       Array.isArray(data) ? data : data.chords,
-      songSelect.options[songSelect.selectedIndex].textContent
+      songSelect.options[songSelect.selectedIndex].textContent,
+      Array.isArray(data) ? null : data.lyrics
     );
-
   } catch (error) {
     status.textContent = "曲読み込みエラー: " + error.message;
   } finally {
@@ -726,13 +736,10 @@ loadSongList();
 
 function pluckString(stringIdx, voicing = currentVoicing) {
   if (!guitarSampler || !voicing) return;
-
   let targetIdx = stringIdx;
-
   if (stringIdx === "bass") {
     targetIdx = -1;
     let lowestNote = Infinity;
-
     voicing.forEach((note, index) => {
       if (note !== null) {
         const midi = Tone.Frequency(note).toMidi();
@@ -742,12 +749,9 @@ function pluckString(stringIdx, voicing = currentVoicing) {
         }
       }
     });
-
     if (targetIdx === -1) return;
   }
-
   const note = voicing[targetIdx];
-
   if (note !== null) {
     soundingNotes.add(note);
     const velocity = 0.75 + Math.random() * 0.15;
@@ -772,11 +776,8 @@ function playStringAtPoint(x, y) {
     lastPlayedString = null;
     return;
   }
-
   const stringIdx = Number(stringButton.dataset.string);
-
   if (stringIdx === lastPlayedString) return;
-
   lastPlayedString = stringIdx;
   pluckString(stringIdx);
 }
@@ -784,28 +785,22 @@ function playStringAtPoint(x, y) {
 // 弦パネル内のどこからでも操作開始可能
 stringPanel.addEventListener("pointerdown", event => {
   if (!guitarSampler || !currentVoicing) return;
-
   event.preventDefault();
-
   activeStringPointerId = event.pointerId;
   lastPlayedString = null;
-
   playStringAtPoint(event.clientX, event.clientY);
 });
 
 // 指の移動
 document.addEventListener("pointermove", event => {
   if (event.pointerId !== activeStringPointerId) return;
-
   event.preventDefault();
-
   playStringAtPoint(event.clientX, event.clientY);
 });
 
 // 指を離したとき
 function endStringPointer(event) {
   if (event.pointerId !== activeStringPointerId) return;
-
   activeStringPointerId = null;
   lastPlayedString = null;
 }
@@ -867,11 +862,9 @@ patternButtons.forEach(btn => {
 
 function releasePatternButton(e) {
   if (e.pointerId !== patternPointerId) return;
-
   if (pressedPatternButton) {
     pressedPatternButton.classList.remove("pressed");
   }
-
   pressedPatternButton = null;
   patternPointerId = null;
 }
