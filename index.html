@@ -14,7 +14,6 @@ body {
 }
 #info-panel { padding: 12px 14px; text-align: center; background: #2a2a35; }
 h1 { font-size: 18px; margin: 0 0 8px; }
-#chord-display { font-size: clamp(32px, 8vw, 48px); font-weight: 700; color: #ffb454; min-height: 1.25em; }
 #progress { color: #bbb; font-size: 13px; margin: 3px 0 8px; }
 .controls { display: flex; justify-content: center; align-items: center; gap: 8px; flex-wrap: wrap; }
 button, .file-label {
@@ -51,7 +50,6 @@ input[type=file] { display: none; }
 }
 .panel-section { width: 100%; text-align: center; }
 .section-title { font-size: 13px; color: #aaa; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
-.controls { display: flex; align-items: center; gap: 8px; }
 /* 縦横比が整ったボタン用スタイル */
 .pattern-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; width: 100%; }
 .pattern-btn {
@@ -113,11 +111,6 @@ input[type=range] { width: 160px; accent-color: #ffb454; }
 #previous-lyrics-display {
   font-size: 13px;
   color: #999;
-  margin-top: 4px;
-}
-#lyrics-display {
-  font-size: 20px;
-  color: #fff;
   margin-top: 4px;
 }
 #previous-lyrics-display[hidden],
@@ -250,22 +243,16 @@ input[type=range] { width: 160px; accent-color: #ffb454; }
 </div>
 
 <div id="chord-display">
-
   <div class="chord-item">
     <div id="previous-chord">＿</div>
     <div id="previous-lyrics-display" hidden></div>
   </div>
-
   <div class="chord-item">
     <div id="current-chord">未読込</div>
     <div id="lyrics-display" hidden></div>
   </div>
-
   <div id="progress">未読込</div>
-
 </div>
-
-<div id="lyrics-display" hidden></div>
 
 <!-- 6本のギター弦 -->
 <div id="string-panel">
