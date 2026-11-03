@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Webギターコード楽器 - ワンフレーズ・アルペジオ版</title>
+<title>Webギターコード</title>
 <style>
 :root { color-scheme: dark; }
 * { box-sizing: border-box; }
@@ -50,7 +50,7 @@ input[type=file] { display: none; }
 }
 .panel-section { width: 100%; text-align: center; }
 .section-title { font-size: 13px; color: #aaa; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
-/* 縦横比が整ったボタン用スタイル */
+
 .pattern-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; width: 100%; }
 .pattern-btn {
   flex: 1; min-width: 140px; max-width: 200px; aspect-ratio: 3.5 / 1;
@@ -66,11 +66,11 @@ input[type=file] { display: none; }
 
 /* ワンフレーズ演奏ボタン */
 .play-controls { display: flex; gap: 10px; justify-content: center; align-items: center; }
-#next-button, #trigger-arpeggio {
+#next-button, #strum-button {
   background: #526273; font-weight: bold; font-size: 18px;
   width: 100%; max-width: 200px; aspect-ratio: 3.5 / 1; border-radius: 12px;
 }
-#next-button:active, #trigger-arpeggio:active { background: #219653; transform: scale(0.98); }
+#next-button:active, #strum-button:active { background: #219653; transform: scale(0.98); }
 
 .bpm-controls { display: flex; align-items: center; justify-content: center; gap: 12px; }
 .bpm-display { font-size: 20px; font-weight: bold; color: #ffb454; min-width: 80px; text-align: center; }
@@ -237,7 +237,7 @@ input[type=range] { width: 160px; accent-color: #ffb454; }
   <div class="panel-section">
     <div class="play-controls">
       <button id="next-button" disabled>次コード ▶</button>
-      <button id="trigger-arpeggio" disabled>ストラム(一発)</button>
+      <button id="strum-button" disabled>ストラム(一発)</button>
     </div>
   </div>
 </div>
@@ -533,7 +533,7 @@ const firstButton = document.getElementById("first-button");
 <!-- const strumButton = document.getElementById("strum-button"); -->
 const songSelect = document.getElementById("song-select");
 
-const triggerArpeggioBtn = document.getElementById("trigger-arpeggio");
+const strumBtn = document.getElementById("strum-button");
 const patternButtons = document.querySelectorAll(".pattern-btn");
 const bpmUpBtn = document.getElementById("bpm-up");
 const bpmDownBtn = document.getElementById("bpm-down");
@@ -592,7 +592,7 @@ function updateUIState() {
   const ready = guitarSampler && progression.length > 0;
   <!-- strumButton.disabled = !ready; -->
   firstButton.disabled = !ready;
-  triggerArpeggioBtn.disabled = !ready;
+  strumBtn.disabled = !ready;
   patternButtons.forEach(btn => btn.disabled = !ready);
   bpmUpBtn.disabled = !ready;
   bpmDownBtn.disabled = !ready;
@@ -852,7 +852,7 @@ document.addEventListener("pointerup", endStringPointer);
 document.addEventListener("pointercancel", endStringPointer);
 
 // コード一発
-triggerArpeggioBtn.addEventListener("pointerdown", (e) => {
+strumBtn.addEventListener("pointerdown", (e) => {
   e.preventDefault();
   if (!guitarSampler || !currentVoicing) return;
   // 前の音を停止
