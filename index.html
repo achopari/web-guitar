@@ -88,17 +88,41 @@ input[type=range] { width: 160px; accent-color: #ffb454; }
 #chord-display {
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   gap: 30px;
   margin: 12px auto;
   font-size: 24px;
   font-weight: bold;
+}
+.chord-item {
+  min-width: 70px;
+  text-align: center;
 }
 #previous-chord {
   color: #999;
 }
 #current-chord {
   color: #ffb454;
+}
+#progress {
+  color: #bbb;
+  font-size: 15px;
+  font-weight: normal;
+  align-self: center;
+}
+#previous-lyrics-display {
+  font-size: 13px;
+  color: #999;
+  margin-top: 4px;
+}
+#lyrics-display {
+  font-size: 20px;
+  color: #fff;
+  margin-top: 4px;
+}
+#previous-lyrics-display[hidden],
+#lyrics-display[hidden] {
+  display: none;
 }
 /* 画面下部の6本のギター弦 */
 #string-panel {
@@ -226,9 +250,19 @@ input[type=range] { width: 160px; accent-color: #ffb454; }
 </div>
 
 <div id="chord-display">
-  <span id="previous-chord">＿</span>
-  <span id="current-chord">未読込</span>
-  <span id="progress">未読込</span>
+
+  <div class="chord-item">
+    <div id="previous-chord">＿</div>
+    <div id="previous-lyrics-display" hidden></div>
+  </div>
+
+  <div class="chord-item">
+    <div id="current-chord">未読込</div>
+    <div id="lyrics-display" hidden></div>
+  </div>
+
+  <div id="progress">未読込</div>
+
 </div>
 
 <div id="lyrics-display" hidden></div>
@@ -527,7 +561,7 @@ function showChord() {
   const currentChordDisplay = document.getElementById("current-chord");
   previousChordDisplay.textContent = chordIndex === 0 ? "＿" : progression[chordIndex - 1];
   currentChordDisplay.textContent = currentChord.name;
-  // 現在のコードに対応する歌詞を表示
+  // 現在のコードの歌詞
   const lyricsDisplay = document.getElementById("lyrics-display");
   if (currentLyrics && chordIndex < currentLyrics.length) {
     lyricsDisplay.textContent = currentLyrics[chordIndex];
@@ -535,7 +569,18 @@ function showChord() {
   } else {
     lyricsDisplay.textContent = "";
     lyricsDisplay.hidden = true;
-  }  
+  }
+  // 前のコードの歌詞
+  const previousLyricsDisplay =
+    document.getElementById("previous-lyrics-display");
+  if (currentLyrics && chordIndex > 0 &&
+      chordIndex - 1 < currentLyrics.length) {
+    previousLyricsDisplay.textContent = currentLyrics[chordIndex - 1];
+    previousLyricsDisplay.hidden = false;
+  } else {
+    previousLyricsDisplay.textContent = "";
+    previousLyricsDisplay.hidden = true;
+  }
   progress.textContent = `${chordIndex + 1} / ${progression.length}`;
   prevButton.disabled = chordIndex === 0;
   nextButton.disabled = progression.length < 2;
