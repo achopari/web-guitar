@@ -14,7 +14,6 @@ body {
 }
 #info-panel { padding: 12px 14px; text-align: center; background: #2a2a35; }
 h1 { font-size: 18px; margin: 0 0 8px; }
-#progress { color: #bbb; font-size: 13px; margin: 3px 0 8px; }
 .controls { display: flex; justify-content: center; align-items: center; gap: 8px; flex-wrap: wrap; }
 button, .file-label {
   border: 0; border-radius: 9px; padding: 11px 16px; font-size: 15px;
@@ -35,7 +34,6 @@ select:disabled {
 }
 button:disabled, .file-label.disabled { opacity: .4; pointer-events: none; }
 
-/* #next-button { background: #e67e22; color: #161616; font-weight: 700; } */
 #prev-button { background: #526273; }
 .file-label { display: inline-block; background: #3b806b; }
 input[type=file] { display: none; }
@@ -530,7 +528,6 @@ const nextButton = document.getElementById("next-button");
 const prevButton = document.getElementById("prev-button");
 const audioButton = document.getElementById("audio-button");
 const firstButton = document.getElementById("first-button");
-<!-- const strumButton = document.getElementById("strum-button"); -->
 const songSelect = document.getElementById("song-select");
 
 const strumBtn = document.getElementById("strum-button");
